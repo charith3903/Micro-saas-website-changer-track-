@@ -1,4 +1,7 @@
 import Link from "next/link";
+import PricingTable from "@/components/PricingTable";
+import DiffPreviewDemo from "@/components/DiffPreviewDemo";
+import Faq from "@/components/Faq";
 
 export default function LandingPage() {
   return (
@@ -19,7 +22,10 @@ export default function LandingPage() {
               </div>
               <span className="text-xl font-bold text-white">WebMonitor</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
+              <Link href="/pricing" className="hidden sm:inline text-slate-300 hover:text-white transition-colors font-medium">
+                Pricing
+              </Link>
               <Link href="/login" className="text-slate-300 hover:text-white transition-colors font-medium">
                 Log in
               </Link>
@@ -74,6 +80,13 @@ export default function LandingPage() {
 
           <p className="text-sm text-slate-500 mt-4">
             No credit card required · 2 free monitors included
+          </p>
+        </div>
+
+        <div className="mt-16 relative z-10">
+          <DiffPreviewDemo />
+          <p className="text-center text-xs text-slate-600 mt-4">
+            Illustrative demo — not live customer data
           </p>
         </div>
       </section>
@@ -148,6 +161,40 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Subscription & Trial Reminder — second product, same account */}
+      <section className="py-24 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="glass-card p-8 sm:p-12 glow-indigo">
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-start">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center text-3xl shrink-0">
+                💳
+              </div>
+              <div>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 mb-3">
+                  Also included in your account
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                  Never pay for a forgotten subscription again
+                </h2>
+                <p className="text-slate-400 leading-relaxed mb-6">
+                  Add your subscriptions and free-trial end dates, and we&apos;ll email you before each
+                  one renews or starts charging — so you can cancel in time. It pays for itself the
+                  first time it saves you one forgotten charge.
+                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <Link href="/signup" className="btn-gradient text-sm !px-6 !py-3 inline-block text-center">
+                    Start Tracking Subscriptions
+                  </Link>
+                  <p className="text-sm text-slate-500">
+                    Free for up to 3 · Pro unlimited for $2.99/mo · same login, no separate signup
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="py-24 px-4 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-500/5 to-transparent"></div>
@@ -193,7 +240,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Preview */}
-      <section className="py-24 px-4">
+      <section id="pricing" className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -204,88 +251,61 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Free */}
-            <div className="glass-card p-8">
-              <h3 className="text-lg font-semibold text-slate-300 mb-1">Free</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-bold text-white">$0</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="space-y-3 text-sm text-slate-400 mb-8">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  2 monitors
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Check every 24 hours
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Email alerts
-                </li>
-              </ul>
-              <Link href="/signup" className="block w-full text-center py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors font-medium">
-                Get Started
-              </Link>
-            </div>
+          <PricingTable />
+        </div>
+      </section>
 
-            {/* Basic — recommended */}
-            <div className="glass-card p-8 ring-2 ring-indigo-500/50 relative glow-indigo">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold px-4 py-1 rounded-full">
-                Most Popular
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-1">Basic</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-bold text-white">$3</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="space-y-3 text-sm text-slate-300 mb-8">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  10 monitors
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Check every 1 hour
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Email + Telegram alerts
-                </li>
-              </ul>
-              <Link href="/signup" className="btn-gradient block w-full text-center">
-                Start with Basic
-              </Link>
-            </div>
-
-            {/* Pro */}
-            <div className="glass-card p-8">
-              <h3 className="text-lg font-semibold text-slate-300 mb-1">Pro</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-bold text-white">$5</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="space-y-3 text-sm text-slate-400 mb-8">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  30 monitors
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Check every 15 minutes
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  Email + Telegram + Webhook
-                </li>
-              </ul>
-              <Link href="/signup" className="block w-full text-center py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors font-medium">
-                Go Pro
-              </Link>
-            </div>
+      {/* Trust & Security */}
+      <section className="py-24 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-500/5 to-transparent"></div>
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Built with <span className="gradient-text">safety</span> in mind
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              Real safeguards already built into how WebMonitor handles your data and requests.
+            </p>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'Passwords never stored in plain text',
+                description: 'Every password is hashed with bcrypt before it touches the database — we never see or store it directly.',
+              },
+              {
+                title: 'Protection against internal-network abuse',
+                description: 'Monitor URLs are checked against private and internal IP ranges — including at fetch time, to catch DNS changes after setup — so the service can\'t be used to probe internal infrastructure.',
+              },
+              {
+                title: 'Auto-pause on repeated failures',
+                description: "A monitor that fails 3 checks in a row is automatically paused and you're alerted once, instead of retrying forever or going silently broken.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="glass-card p-6">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-24 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Frequently asked <span className="gradient-text">questions</span>
+            </h2>
+          </div>
+          <Faq />
         </div>
       </section>
 
@@ -297,7 +317,7 @@ export default function LandingPage() {
               Ready to never miss a change?
             </h2>
             <p className="text-slate-400 mb-8">
-              Join thousands of users who stay ahead with WebMonitor.
+              Start monitoring in under a minute — no credit card required.
             </p>
             <Link href="/signup" className="btn-gradient text-lg !px-8 !py-4 inline-block">
               Start Monitoring for Free

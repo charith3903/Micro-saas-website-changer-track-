@@ -80,12 +80,15 @@ function truncate(str: string, max: number): string {
  * @param newValue - Value extracted from the current check
  * @param oldValue - Value from the previous check (null on first run)
  * @param type     - Monitor type (for type-specific comparison in Phase 2)
+ * @param priceThreshold - For `price_drop` monitors: only alert once the
+ *   price is at or below this value (rather than on every fluctuation).
  * @returns Change result with diff summary if content changed
  */
 export function detectChange(
   newValue: string,
   oldValue: string | null,
   type: MonitorType,
+  priceThreshold?: number | null,
 ): ChangeResult {
   // ── First check: capture baseline, don't alert ──
   if (oldValue === null) {
@@ -97,6 +100,23 @@ export function detectChange(
   // Already normalized in the extractor, but belt-and-suspenders
   const oldNorm = oldValue.replace(/\s+/g, ' ').trim();
   const newNorm = newValue.replace(/\s+/g, ' ').trim();
+
+  // ── Price-drop with a target threshold: alert on crossing, not on every wiggle ──
+  if (type === 'price_drop' && priceThreshold != null) {
+    const oldPrice = parseFloat(oldNorm);
+    const newPrice = parseFloat(newNorm);
+    const wasAtOrBelow = !isNaN(oldPrice) && oldPrice <= priceThreshold;
+    const isAtOrBelow = !isNaN(newPrice) && newPrice <= priceThreshold;
+
+    if (isAtOrBelow && !wasAtOrBelow) {
+      log.info(`Price crossed threshold: $${newPrice.toFixed(2)} <= $${priceThreshold.toFixed(2)}`);
+      return {
+        changed: true,
+        diff: `Price dropped to $${newPrice.toFixed(2)} — at or below your target of $${priceThreshold.toFixed(2)}`,
+      };
+    }
+    return { changed: false };
+  }
 
   if (oldNorm === newNorm) {
     log.debug('No change detected');

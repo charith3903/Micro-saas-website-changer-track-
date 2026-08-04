@@ -10,7 +10,7 @@ async function test() {
     const res1 = await resolve4('www.applantics.com');
     console.log('resolve4:', res1);
   } catch (err) {
-    console.error('resolve4 failed:', err.message);
+    console.error('resolve4 failed:', err instanceof Error ? err.message : err);
   }
 
   console.log('Testing dns.lookup...');
@@ -18,7 +18,7 @@ async function test() {
     const res2 = await lookup('www.applantics.com');
     console.log('lookup:', res2);
   } catch (err) {
-    console.error('lookup failed:', err.message);
+    console.error('lookup failed:', err instanceof Error ? err.message : err);
   }
 }
 test();

@@ -8,6 +8,7 @@ export interface User {
   password_hash: string;
   email_verified: boolean;
   plan: 'free' | 'basic' | 'pro';
+  subscription_tracker_plan: 'free' | 'pro';
   timezone: string;
   telegram_chat_id: string | null;
   created_at: string;
@@ -43,6 +44,7 @@ export interface Monitor {
   interval_seconds: number;
   notify_email: boolean;
   notify_telegram: boolean;
+  notify_webhook: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +81,47 @@ export interface NotificationChannel {
 }
 
 // ============================================================
+// Subscription & Trial Reminder — a second product in the same
+// account. NOT the same table/concept as this app's own billing
+// `subscriptions` table above.
+// ============================================================
+
+export type BillingCycle = 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'one_time';
+export type TrackedSubscriptionStatus = 'active' | 'cancelled' | 'expired';
+
+export interface TrackedSubscription {
+  id: string;
+  user_id: string;
+  name: string;
+  is_trial: boolean;
+  amount: number | null;
+  currency: string;
+  billing_cycle: BillingCycle;
+  next_renewal_date: string;
+  reminder_days_before: number;
+  status: TrackedSubscriptionStatus;
+  last_reminded_for_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTrackedSubscriptionRequest {
+  name: string;
+  is_trial?: boolean;
+  amount?: number;
+  currency?: string;
+  billing_cycle?: BillingCycle;
+  next_renewal_date: string;
+  reminder_days_before?: number;
+  notes?: string;
+}
+
+export interface UpdateTrackedSubscriptionRequest extends Partial<CreateTrackedSubscriptionRequest> {
+  status?: TrackedSubscriptionStatus;
+}
+
+// ============================================================
 // API request/response types
 // ============================================================
 
@@ -90,8 +133,10 @@ export interface CreateMonitorRequest {
   keyword?: string;
   price_threshold?: number;
   render_mode?: RenderMode;
+  interval_seconds?: number;
   notify_email?: boolean;
   notify_telegram?: boolean;
+  notify_webhook?: boolean;
 }
 
 export interface UpdateMonitorRequest extends Partial<CreateMonitorRequest> {

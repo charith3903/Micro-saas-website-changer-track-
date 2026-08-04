@@ -17,6 +17,7 @@ export async function GET() {
         id: user.id,
         email: user.email,
         plan: user.plan,
+        subscription_tracker_plan: user.subscription_tracker_plan,
         timezone: user.timezone,
         email_verified: user.email_verified,
         created_at: user.created_at,

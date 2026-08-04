@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { queryOne, queryAll, query } from '@/lib/db';
 import { validateUrlFormat } from '@/lib/ssrf';
+import { canUseChannel, isValidInterval } from '@/lib/plans';
 import type { Monitor, Check, UpdateMonitorRequest } from '@/lib/types';
 
 // ============================================================
@@ -84,6 +85,38 @@ export async function PUT(
       }
     }
 
+    // Validate type-specific required fields against the merged (existing + incoming) state
+    const effectiveType = body.type ?? existing.type;
+    const effectiveSelector = body.selector !== undefined ? body.selector : existing.selector;
+    const effectiveKeyword = body.keyword !== undefined ? body.keyword : existing.keyword;
+
+    if ((effectiveType === 'css_selector' || effectiveType === 'price_drop') && !effectiveSelector?.trim()) {
+      return NextResponse.json(
+        { error: 'This monitor type requires a CSS selector' },
+        { status: 400 }
+      );
+    }
+    if ((effectiveType === 'keyword_appears' || effectiveType === 'keyword_disappears') && !effectiveKeyword?.trim()) {
+      return NextResponse.json(
+        { error: 'This monitor type requires a keyword' },
+        { status: 400 }
+      );
+    }
+
+    if (body.interval_seconds !== undefined && !isValidInterval(user.plan, body.interval_seconds)) {
+      return NextResponse.json(
+        { error: `Your ${user.plan} plan doesn't allow checks that frequently.` },
+        { status: 403 }
+      );
+    }
+
+    if (body.notify_webhook && !canUseChannel(user.plan, 'webhook')) {
+      return NextResponse.json(
+        { error: 'Webhook alerts require a Pro plan.' },
+        { status: 403 }
+      );
+    }
+
     // Build update query dynamically
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -91,8 +124,8 @@ export async function PUT(
 
     const allowedFields: (keyof UpdateMonitorRequest)[] = [
       'name', 'url', 'type', 'selector', 'keyword',
-      'price_threshold', 'render_mode', 'notify_email',
-      'notify_telegram', 'status',
+      'price_threshold', 'render_mode', 'interval_seconds',
+      'notify_email', 'notify_telegram', 'notify_webhook', 'status',
     ];
 
     for (const field of allowedFields) {

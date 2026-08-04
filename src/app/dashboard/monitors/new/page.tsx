@@ -3,21 +3,26 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import MonitorForm from '@/components/MonitorForm';
+import MonitorForm, { type MonitorFormValues } from '@/components/MonitorForm';
 import { useToast } from '@/components/ui/Toast';
+import { useHasWebhookChannel } from '@/lib/use-webhook-channel';
 
 export default function AddMonitorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
+  const hasWebhookChannel = useHasWebhookChannel();
 
-  const handleSubmit = async (data: { url: string; name: string }) => {
+  const handleSubmit = async (data: MonitorFormValues) => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/monitors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          price_threshold: data.price_threshold ? parseFloat(data.price_threshold) : undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -63,7 +68,11 @@ export default function AddMonitorPage() {
       {/* Form Container */}
       <div className="max-w-xl">
         <div className="glass-card p-1">
-          <MonitorForm onSubmit={handleSubmit} isLoading={isLoading} />
+          <MonitorForm
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            hasWebhookChannel={hasWebhookChannel}
+          />
         </div>
 
         {/* Info Card */}

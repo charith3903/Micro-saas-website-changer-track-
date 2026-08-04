@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import StatTile from '@/components/ui/StatTile';
+import CheckHistoryStrip from '@/components/CheckHistoryStrip';
 import { useToast } from '@/components/ui/Toast';
 
 interface Monitor {
@@ -24,10 +26,10 @@ interface Monitor {
 interface Check {
   id: string;
   checked_at: string;
-  status: 'ok' | 'error';
+  ok: boolean;
   changed: boolean;
   duration_ms: number | null;
-  error_message: string | null;
+  error: string | null;
 }
 
 const statusConfig: Record<string, { variant: 'success' | 'warning' | 'error'; label: string }> = {
@@ -103,6 +105,22 @@ export default function MonitorDetailPage() {
   useEffect(() => {
     if (id) fetchData();
   }, [id, fetchData]);
+
+  const checkStats = useMemo(() => {
+    const total = checks.length;
+    const okCount = checks.filter((c) => c.ok).length;
+    const changesCount = checks.filter((c) => c.changed).length;
+    const durations = checks
+      .map((c) => c.duration_ms)
+      .filter((d): d is number => d != null);
+    const avgDuration =
+      durations.length > 0
+        ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+        : null;
+    const successRate = total > 0 ? Math.round((okCount / total) * 100) : null;
+
+    return { total, changesCount, avgDuration, successRate };
+  }, [checks]);
 
   const handlePauseResume = async () => {
     if (!monitor) return;
@@ -265,12 +283,14 @@ export default function MonitorDetailPage() {
               </svg>
               Check Now
             </Button>
-            <Button variant="ghost" size="sm" disabled>
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit
-            </Button>
+            <Link href={`/dashboard/monitors/${id}/edit`}>
+              <Button variant="ghost" size="sm">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </Button>
+            </Link>
             <Button
               variant="danger"
               size="sm"
@@ -356,6 +376,59 @@ export default function MonitorDetailPage() {
         </Card>
       )}
 
+      {/* Quick stats */}
+      {checks.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <StatTile
+            label="Success Rate"
+            value={checkStats.successRate !== null ? `${checkStats.successRate}%` : '—'}
+            tone={
+              checkStats.successRate === null
+                ? 'neutral'
+                : checkStats.successRate >= 95
+                ? 'success'
+                : checkStats.successRate >= 80
+                ? 'warning'
+                : 'error'
+            }
+            icon={
+              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+            hint={`${checkStats.total} checks recorded`}
+          />
+          <StatTile
+            label="Changes Detected"
+            value={checkStats.changesCount}
+            tone="info"
+            icon={
+              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            }
+          />
+          <StatTile
+            label="Avg. Check Duration"
+            value={checkStats.avgDuration !== null ? `${checkStats.avgDuration}ms` : '—'}
+            tone="brand"
+            icon={
+              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            }
+          />
+        </div>
+      )}
+
+      {/* Check activity strip */}
+      {checks.length > 0 && (
+        <Card className="glass-card p-5 mb-6">
+          <h2 className="text-sm font-semibold text-white mb-4">Recent Activity</h2>
+          <CheckHistoryStrip checks={checks} />
+        </Card>
+      )}
+
       {/* Check History */}
       <Card className="glass-card overflow-hidden">
         <div className="p-5 border-b border-slate-700/50">
@@ -404,9 +477,11 @@ export default function MonitorDetailPage() {
                       {formatDate(check.checked_at)}
                     </td>
                     <td className="px-5 py-3">
-                      <Badge variant={check.status === 'ok' ? 'success' : 'error'}>
-                        {check.status === 'ok' ? 'OK' : 'Error'}
-                      </Badge>
+                      <span title={check.error || undefined}>
+                        <Badge variant={check.ok ? 'success' : 'error'}>
+                          {check.ok ? 'OK' : 'Error'}
+                        </Badge>
+                      </span>
                     </td>
                     <td className="px-5 py-3">
                       {check.changed ? (

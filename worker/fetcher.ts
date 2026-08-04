@@ -63,8 +63,13 @@ function isPrivateIPv6(ip: string): boolean {
 /**
  * Resolves hostname via DNS and validates all IPs are public.
  * Throws if any resolved address is private/reserved.
+ *
+ * Exported for reuse anywhere else the worker sends an outbound request to a
+ * user-supplied URL (e.g. webhook alert delivery in alerter.ts) — a webhook
+ * destination is just as capable of reaching internal infrastructure as a
+ * monitored page.
  */
-async function validateUrl(url: string): Promise<void> {
+export async function validateUrl(url: string): Promise<void> {
   const parsed = new URL(url);
 
   // Only HTTP(S) allowed
@@ -89,7 +94,8 @@ async function validateUrl(url: string): Promise<void> {
     const addresses = await dns.lookup(hostname, { all: true });
     for (const record of addresses) {
       const ip = record.address;
-      if (isPrivateIPv4(ip) || isPrivateIPv6(ip)) {
+      const isPrivate = record.family === 6 ? isPrivateIPv6(ip) : isPrivateIPv4(ip);
+      if (isPrivate) {
         throw new Error(`SSRF blocked: ${hostname} resolves to private IP ${ip}`);
       }
     }

@@ -9,6 +9,7 @@
 import { Resend } from 'resend';
 import type { Pool } from 'pg';
 import { createLogger } from './logger';
+import { validateUrl } from './fetcher';
 import type { ChangeResult } from './detector';
 
 const log = createLogger('alerter');
@@ -24,6 +25,7 @@ export interface MonitorForAlert {
   type: string;
   notify_email: boolean;
   notify_telegram: boolean;
+  notify_webhook: boolean;
 }
 
 /** Payload shape stored as JSONB in the alerts table. */
@@ -39,7 +41,8 @@ interface AlertPayload {
 
 let resendClient: Resend | null = null;
 
-function getResendClient(): Resend | null {
+/** Exported for reuse by other reminder pipelines (e.g. subscriptionReminder.ts). */
+export function getResendClient(): Resend | null {
   if (resendClient) return resendClient;
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -52,8 +55,8 @@ function getResendClient(): Resend | null {
 
 // ── Email builder ───────────────────────────────────────────
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-const FROM_EMAIL = process.env.ALERT_FROM_EMAIL ?? 'WebMonitor <alerts@webmonitor.app>';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+export const FROM_EMAIL = process.env.ALERT_FROM_EMAIL ?? 'WebMonitor <alerts@webmonitor.app>';
 
 /**
  * Builds the HTML email body for a change alert.
@@ -110,7 +113,7 @@ function buildEmailHtml(
 }
 
 /** Minimal HTML escaping for safe template insertion. */
-function escapeHtml(str: string): string {
+export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -212,10 +215,65 @@ export async function sendAlert(
     }
   }
 
+  // ── Webhook alert ──
+  if (monitor.notify_webhook) {
+    await sendWebhookAlerts(pool, monitor, payload);
+  }
+
   // ── Telegram alert (Phase 2) ──
   if (monitor.notify_telegram) {
     log.warn('Telegram alerts not implemented yet (Phase 2)');
     // TODO: Send via Telegram Bot API using the user's telegram_chat_id
+  }
+}
+
+/**
+ * Delivers a webhook POST to every verified webhook channel the user has
+ * configured. Best-effort: one failing endpoint doesn't block the others,
+ * and a webhook failure never fails the overall alert pipeline.
+ */
+async function sendWebhookAlerts(
+  pool: Pool,
+  monitor: MonitorForAlert,
+  payload: AlertPayload,
+): Promise<void> {
+  let channels: { id: string; destination: string }[];
+  try {
+    const result = await pool.query<{ id: string; destination: string }>(
+      `SELECT id, destination FROM notification_channels
+       WHERE user_id = $1 AND type = 'webhook' AND verified = true`,
+      [monitor.user_id],
+    );
+    channels = result.rows;
+  } catch (err) {
+    log.error('Failed to load webhook channels', err);
+    return;
+  }
+
+  for (const channel of channels) {
+    try {
+      // Re-validate at send time — DNS may have changed since the channel
+      // was configured (rebinding protection), same as monitored URLs.
+      await validateUrl(channel.destination);
+
+      const response = await fetch(channel.destination, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'change_detected', ...payload }),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      const delivered = response.ok;
+      if (delivered) {
+        log.info(`Webhook alert delivered to ${channel.destination}`);
+      } else {
+        log.warn(`Webhook alert to ${channel.destination} returned HTTP ${response.status}`);
+      }
+      await recordAlert(pool, monitor, 'webhook', payload, delivered);
+    } catch (err) {
+      log.error(`Failed to deliver webhook alert to ${channel.destination}`, err);
+      await recordAlert(pool, monitor, 'webhook', payload, false);
+    }
   }
 }
 

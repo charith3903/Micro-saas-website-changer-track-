@@ -46,6 +46,7 @@ interface MonitorRow {
   last_value: string | null;
   notify_email: boolean;
   notify_telegram: boolean;
+  notify_webhook: boolean;
 }
 
 // ── Semaphore for bounded concurrency ───────────────────────
@@ -113,7 +114,8 @@ async function processMonitor(pool: Pool, monitor: MonitorRow): Promise<void> {
     });
 
     // ── Step 3: Detect ──
-    const changeResult = detectChange(newValue, monitor.last_value, monitor.type);
+    const priceThreshold = monitor.price_threshold != null ? parseFloat(monitor.price_threshold) : null;
+    const changeResult = detectChange(newValue, monitor.last_value, monitor.type, priceThreshold);
 
     // ── Step 4: Alert (only if changed and not first check) ──
     if (changeResult.changed && !changeResult.isFirstCheck) {
@@ -132,6 +134,7 @@ async function processMonitor(pool: Pool, monitor: MonitorRow): Promise<void> {
           type: monitor.type,
           notify_email: monitor.notify_email,
           notify_telegram: monitor.notify_telegram,
+          notify_webhook: monitor.notify_webhook,
         };
         await sendAlert(pool, monitorForAlert, changeResult, userResult.rows[0].email);
       }
@@ -225,6 +228,7 @@ async function processMonitor(pool: Pool, monitor: MonitorRow): Promise<void> {
             type: monitor.type,
             notify_email: monitor.notify_email,
             notify_telegram: monitor.notify_telegram,
+            notify_webhook: monitor.notify_webhook,
           };
           await sendErrorAlert(pool, monitorForAlert, errorMessage, userResult.rows[0].email);
         }

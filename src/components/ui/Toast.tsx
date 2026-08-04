@@ -127,6 +127,7 @@ function ToastItem({
       </div>
       <button
         onClick={handleClose}
+        aria-label="Dismiss notification"
         className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +154,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
       {/* Toast container */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-3">
+      <div
+        className="fixed top-4 right-4 z-[100] flex flex-col gap-3"
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
         ))}

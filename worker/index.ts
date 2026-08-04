@@ -16,6 +16,7 @@ import 'dotenv/config';
 import { Pool } from 'pg';
 import { createLogger } from './logger';
 import { startScheduler, type SchedulerHandle } from './scheduler';
+import { startSubscriptionReminderScheduler, type SubscriptionReminderHandle } from './subscriptionReminder';
 
 const log = createLogger('worker');
 
@@ -80,8 +81,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // ── Start scheduler ──
+  // ── Start schedulers ──
   const scheduler: SchedulerHandle = startScheduler(pool);
+  const subscriptionReminderScheduler: SubscriptionReminderHandle = startSubscriptionReminderScheduler(pool);
 
   log.info('Worker is running. Press Ctrl+C to stop.');
   log.info('═══════════════════════════════════════════════════');
@@ -98,8 +100,9 @@ async function main(): Promise<void> {
 
     log.info(`\nReceived ${signal} — shutting down gracefully...`);
 
-    // 1. Stop the cron job so no new ticks are scheduled
+    // 1. Stop the cron jobs so no new ticks are scheduled
     scheduler.stop();
+    subscriptionReminderScheduler.stop();
 
     // 2. Close the database pool (waits for active queries to finish)
     try {

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { queryOne, query } from '@/lib/db';
 import { validateUrlDns } from '@/lib/ssrf';
-import * as cheerio from 'cheerio';
+import { extractValue } from '@worker/extractor';
+import { detectChange } from '@worker/detector';
 import type { Monitor } from '@/lib/types';
 
 // ============================================================
@@ -59,10 +60,13 @@ export async function POST(
 
       const html = await response.text();
 
-      // Extract visible text using cheerio
-      const $ = cheerio.load(html);
-      $('script, style, nav, header, footer, aside, noscript, iframe').remove();
-      observedValue = $('body').text().replace(/\s+/g, ' ').trim();
+      // Extract using the same type-aware logic the scheduled worker uses,
+      // so a manual "Check Now" behaves identically for every monitor type.
+      observedValue = extractValue(html, {
+        type: monitor.type,
+        selector: monitor.selector,
+        keyword: monitor.keyword,
+      });
 
     } catch (err) {
       fetchError = err instanceof Error ? err.message : 'Unknown fetch error';
@@ -74,15 +78,12 @@ export async function POST(
     let changed = false;
     let diff: string | null = null;
 
-    // Compare with last value
-    if (ok && monitor.last_value !== null) {
-      if (observedValue !== monitor.last_value) {
-        changed = true;
-        // Generate a simple diff summary
-        const oldLen = monitor.last_value.length;
-        const newLen = observedValue.length;
-        diff = `Content changed (${oldLen} → ${newLen} chars)`;
-      }
+    // Compare with last value using the same detector the scheduled worker uses
+    if (ok) {
+      const priceThreshold = monitor.price_threshold != null ? Number(monitor.price_threshold) : null;
+      const changeResult = detectChange(observedValue, monitor.last_value, monitor.type, priceThreshold);
+      changed = changeResult.changed;
+      diff = changeResult.diff ?? null;
     }
 
     // Store check result

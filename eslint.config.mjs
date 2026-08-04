@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Orphaned nested scaffold, not part of this app.
+    "temp-app/**",
   ]),
 ]);
 

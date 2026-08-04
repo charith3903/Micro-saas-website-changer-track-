@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg';
+import { Pool, QueryResult, QueryResultRow } from 'pg';
 
 // ============================================================
 // PostgreSQL connection pool
@@ -36,7 +36,7 @@ export function getPool(): Pool {
 // ============================================================
 // Helper: run a parameterized query
 // ============================================================
-export async function query<T = Record<string, unknown>>(
+export async function query<T extends QueryResultRow = Record<string, unknown>>(
   text: string,
   params?: unknown[]
 ): Promise<QueryResult<T>> {
@@ -56,7 +56,7 @@ export async function query<T = Record<string, unknown>>(
 // ============================================================
 // Helper: get a single row or null
 // ============================================================
-export async function queryOne<T = Record<string, unknown>>(
+export async function queryOne<T extends QueryResultRow = Record<string, unknown>>(
   text: string,
   params?: unknown[]
 ): Promise<T | null> {
@@ -67,7 +67,7 @@ export async function queryOne<T = Record<string, unknown>>(
 // ============================================================
 // Helper: get all rows
 // ============================================================
-export async function queryAll<T = Record<string, unknown>>(
+export async function queryAll<T extends QueryResultRow = Record<string, unknown>>(
   text: string,
   params?: unknown[]
 ): Promise<T[]> {
